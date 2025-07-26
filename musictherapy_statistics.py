@@ -147,7 +147,7 @@ plot_timeseries = (
 
 print(plot_timeseries)
 plot_timeseries.save('timeseries.pdf')
-plot_timeseries.save('timeseries.png',dpi=150)
+plot_timeseries.save('timeseries.png',dpi=300)
 
 
 #%% statistics
