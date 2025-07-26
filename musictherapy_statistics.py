@@ -63,16 +63,9 @@ data_df = pd.merge(
 			    bpm_df,
 			    on=['Session', 'Metronome_label'],
 			    how='inner')
-# # correct out-of-sync regime
-# data_df = (data_df
-# 		   .assign(Asynchrony = np.select([(data_df['Resp_number']>=outsync_tap) & (data_df['Asynchrony']>outsync_threshold),
-# 										   (data_df['Resp_number']>=outsync_tap) & (data_df['Asynchrony']<-outsync_threshold)],
-# 									[data_df['Asynchrony']-0.5*data_df['ISI_nominal'],
-# 									data_df['Asynchrony']+0.5*data_df['ISI_nominal']],
-# 									default=data_df['Asynchrony']))
-# 		   )
 
 # set correct types
+data_df['Session'] = 'S' + data_df['Session'].map(str)
 data_df[['Session','Metronome_label']] = data_df[['Session','Metronome_label']].astype('category')
 data_df[['Resp_number','Stim_number']] = data_df[['Resp_number','Stim_number']].astype('int32')
 
@@ -141,15 +134,13 @@ plot_timeseries = (
 		 + geom_point(size = marker_size)
 		 + geom_line(data2_df.query("Event_type=='ITI'"),
 			   aes(x='Resp_number',y='ISI_nominal'), size=1)
-		 + facet_grid(['Event_type','Session'], scales="free", labeller="label_both")
-# 		 + facet_wrap(['Event_type','Session'], scales="free", labeller="label_both")
+		 + facet_grid(rows='Event_type',cols='Session', scales="free")
 		 + labs(x = "Response number n",
-				  y = 'ITI and Asynchrony (ms)')
- 		 # + scale_x_continuous(limits=x_lims,breaks=range(x_lims[0],x_lims[1]+1,50))
+				  y = 'ITI ($p_n$) and Asynchrony ($a_n$) (s)')
  		 + theme_bw()
  		 + theme(legend_position='none',
-				strip_background_x=element_rect(fill='white'),
-				strip_background_y=element_rect(fill="white"),
+				strip_background_x=element_rect(fill='lightgray'),
+				strip_background_y=element_rect(fill="lightgray"),
 				panel_border=element_rect(color='black'),
 		 		figure_size = (fig_xsize, fig_ysize))
 		 )
