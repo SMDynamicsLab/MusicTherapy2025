@@ -21,7 +21,7 @@ import statsmodels.api as sm
 
 #%% Load data
 
-datafile = 'assigned_data.csv'
+datafile = 'asignaciones.csv'
 
 end_tap = 200 # just in case, discard last taps
 outsync_tap = 150 # observed change of behavior
@@ -63,6 +63,14 @@ data_df = pd.merge(
 			    bpm_df,
 			    on=['Session', 'Metronome_label'],
 			    how='inner')
+# # correct out-of-sync regime
+# data_df = (data_df
+# 		   .assign(Asynchrony = np.select([(data_df['Resp_number']>=outsync_tap) & (data_df['Asynchrony']>outsync_threshold),
+# 										   (data_df['Resp_number']>=outsync_tap) & (data_df['Asynchrony']<-outsync_threshold)],
+# 									[data_df['Asynchrony']-0.5*data_df['ISI_nominal'],
+# 									data_df['Asynchrony']+0.5*data_df['ISI_nominal']],
+# 									default=data_df['Asynchrony']))
+# 		   )
 
 # set correct types
 data_df['Session'] = 'S' + data_df['Session'].map(str)
@@ -134,9 +142,13 @@ plot_timeseries = (
 		 + geom_point(size = marker_size)
 		 + geom_line(data2_df.query("Event_type=='ITI'"),
 			   aes(x='Resp_number',y='ISI_nominal'), size=1)
-		 + facet_grid(rows='Event_type',cols='Session', scales="free")
+# 		 + facet_grid(['Event_type','Session'], scales="free", labeller="label_both")
+		 + facet_grid(rows='Event_type',cols='Session', scales="free")#, labeller="label_both")
+# 		 + facet_wrap(['Event_type','Session'], scales="free", labeller="label_both")
+# 		 + facet_wrap(['Event_type','Session'], scales="free_y", labeller="label_both")
 		 + labs(x = "Response number n",
-				  y = 'ITI ($p_n$) and Asynchrony ($a_n$) (s)')
+				  y = 'Intertap interval ($ITI_n$) and Asynchrony ($a_n$) (s)')
+ 		 # + scale_x_continuous(limits=x_lims,breaks=range(x_lims[0],x_lims[1]+1,50))
  		 + theme_bw()
  		 + theme(legend_position='none',
 				strip_background_x=element_rect(fill='lightgray'),
@@ -147,7 +159,7 @@ plot_timeseries = (
 
 print(plot_timeseries)
 plot_timeseries.save('timeseries.pdf')
-plot_timeseries.save('timeseries.png',dpi=300)
+plot_timeseries.save('timeseries.png',dpi=150)
 
 
 #%% statistics
