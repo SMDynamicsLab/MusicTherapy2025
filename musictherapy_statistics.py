@@ -131,28 +131,30 @@ marker_size = 0.5
 fig_xsize = 10
 fig_ysize = 6
 
+# query and reformat for plotting
+data2_queried_df = data2_df.query("Event_type!='Interval_diff'")
+data2_queried_df['Session'] = data2_queried_df['Session'].cat.rename_categories({'S1':'Session 1','S2':'Session 2'})
+data2_queried_df['Event_type'] = data2_queried_df['Event_type'].cat.rename_categories({'Asynchrony':'Asynchrony $a_n$','ITI':'Intertap interval $ITI_n$'})
+
 
 plot_timeseries = (
- 		 # ggplot(data2_df, # show all event types
- 		 ggplot(data2_df.query("Event_type!='Interval_diff'"), # show only Asynchrony and ITI
+ 		 ggplot(data2_queried_df, # show only Asynchrony and ITI
 				   aes(x = 'Resp_number', y = 'Value',
 								group = 'Session',
 							    color = 'Metronome_label'))
  		 + geom_line()
 		 + geom_point(size = marker_size)
-		 + geom_line(data2_df.query("Event_type=='ITI'"),
+		 + geom_line(data2_queried_df.query("Event_type=='Intertap interval $ITI_n$'"),
 			   aes(x='Resp_number',y='ISI_nominal'), size=1)
-# 		 + facet_grid(['Event_type','Session'], scales="free", labeller="label_both")
-		 + facet_grid(rows='Event_type',cols='Session', scales="free")#, labeller="label_both")
-# 		 + facet_wrap(['Event_type','Session'], scales="free", labeller="label_both")
-# 		 + facet_wrap(['Event_type','Session'], scales="free_y", labeller="label_both")
+		 + facet_grid(rows='Event_type',cols='Session', scales="free")
 		 + labs(x = "Response number n",
 				  y = 'Intertap interval ($ITI_n$) and Asynchrony ($a_n$) (s)')
- 		 # + scale_x_continuous(limits=x_lims,breaks=range(x_lims[0],x_lims[1]+1,50))
  		 + theme_bw()
  		 + theme(legend_position='none',
-				strip_background_x=element_rect(fill='lightgray'),
-				strip_background_y=element_rect(fill="lightgray"),
+				strip_background_x=element_rect(fill='white'),
+				strip_background_y=element_rect(fill="white"),
+				strip_text_x=element_text(weight='bold'),
+				strip_text_y=element_text(weight='bold'),
 				panel_border=element_rect(color='black'),
 		 		figure_size = (fig_xsize, fig_ysize))
 		 )
@@ -169,9 +171,9 @@ plot_timeseries.save('timeseries.png',dpi=150)
 print('==============')
 print('Posthoc comparisons between sessions')
 print('==============')
-# Interval_diff changees sign between sessions, so we need to switch sign of Interval_diff to test whether it is smaller
+# Interval_diff changes sign between sessions, so we need to switch sign of Interval_diff to test whether it is smaller
 data2_aux_df = (data2_df
-				.assign(Value = np.select([(data2_df['Event_type']=='Interval_diff') & (data2_df['Session']==1)],
+				.assign(Value = np.select([(data2_df['Event_type']=='Interval_diff') & (data2_df['Session']=='S1')],
 							  [-data2_df['Value']],
 							  default=data2_df['Value']))
 				)
@@ -180,10 +182,10 @@ posthoc = pg.pairwise_tests(data=data2_aux_df.query("Event_type!='ITI'"),
                             parametric=True, padjust='fdr_bh', effsize='eta-square', return_desc=True)
 # select mean and CI from results
 posthoc_df = pd.DataFrame(posthoc.to_dict())
-asyn_S1_n = data2_df[(data2_df['Session']==1) & (data2_df['Event_type']=='Asynchrony')]['Value'].dropna().count()
-asyn_S2_n = data2_df[(data2_df['Session']==2) & (data2_df['Event_type']=='Asynchrony')]['Value'].dropna().count()
-intervaldiff_S1_n = data2_df[(data2_df['Session']==1) & (data2_df['Event_type']=='Interval_diff')]['Value'].dropna().count()
-intervaldiff_S2_n = data2_df[(data2_df['Session']==2) & (data2_df['Event_type']=='Interval_diff')]['Value'].dropna().count()
+asyn_S1_n = data2_df[(data2_df['Session']=='S1') & (data2_df['Event_type']=='Asynchrony')]['Value'].dropna().count()
+asyn_S2_n = data2_df[(data2_df['Session']=='S2') & (data2_df['Event_type']=='Asynchrony')]['Value'].dropna().count()
+intervaldiff_S1_n = data2_df[(data2_df['Session']=='S1') & (data2_df['Event_type']=='Interval_diff')]['Value'].dropna().count()
+intervaldiff_S2_n = data2_df[(data2_df['Session']=='S2') & (data2_df['Event_type']=='Interval_diff')]['Value'].dropna().count()
 posthoc_ave_ci_df = (posthoc_df
 					 .query("Event_type=='Asynchrony' | Event_type=='Interval_diff'")
 					 .loc[:,['Event_type','mean(A)','std(A)','mean(B)','std(B)','T','dof','p-corr','eta-square']]
